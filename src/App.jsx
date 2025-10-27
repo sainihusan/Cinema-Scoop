@@ -9,6 +9,7 @@ const App = () => {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [modal, setModal] = useState(null);
+    const [trailer, setTrailer] = useState(null);
 
     const movie = async (p = 1) => {
         if (!title.trim()) {
@@ -17,7 +18,8 @@ const App = () => {
         }
         setError("loading...");
         try {
-            const url = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY}&s=${title}&page=${p}${year ? `&y=${year}` : ""}${type ? `&type=${type}` : ""}`;
+            const url = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY
+                }&s=${title}&page=${p}${year ? `&y=${year}` : ""}${type ? `&type=${type}` : ""}`;
             const res = await fetch(url);
             const data = await res.json();
             if (data.Response === "False") {
@@ -32,12 +34,32 @@ const App = () => {
         }
     };
 
+    const fetchTrailer = async (query) => {
+        try {
+            const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&type=video&q=${encodeURIComponent(
+                query + " trailer"
+            )}&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`;
+            const res = await fetch(ytUrl);
+            const data = await res.json();
+            if (data.items && data.items.length > 0) {
+                const videoId = data.items[0].id.videoId;
+                setTrailer(`https://www.youtube.com/embed/${videoId}?autoplay=1`);
+            } else {
+                setTrailer(null);
+            }
+        } catch {
+            setTrailer(null);
+        }
+    };
+
     const details = async (id) => {
         try {
-            const detailUrl = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY}&i=${id}&plot=full`;
+            const detailUrl = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY
+                }&i=${id}&plot=full`;
             const detailRes = await fetch(detailUrl);
             const details = await detailRes.json();
             setModal(details);
+            fetchTrailer(details.Title);
         } catch {
             setError("Failed to fetch details");
         }
@@ -62,7 +84,11 @@ const App = () => {
                 className="relative group overflow-hidden rounded-2xl cursor-pointer shadow-xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 hover:rotate-1 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700"
             >
                 <img
-                    src={m.Poster !== "N/A" ? m.Poster : "https://via.placeholder.com/300x450?text=No+Image"}
+                    src={
+                        m.Poster !== "N/A"
+                            ? m.Poster
+                            : "https://via.placeholder.com/300x450?text=No+Image"
+                    }
                     alt={m.Title}
                     className="w-full h-64 sm:h-72 md:h-80 object-cover transition-transform duration-500 group-hover:scale-110 group-hover:brightness-75"
                 />
@@ -80,13 +106,12 @@ const App = () => {
 
         return (
             <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-50 p-4">
-                <div
-                    className="relative bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 
-                   rounded-3xl w-full max-w-lg sm:max-w-xl md:max-w-2xl p-6 overflow-y-auto max-h-[90vh] 
-                   shadow-2xl border border-white/20 animate-in slide-in-from-bottom-4 duration-700 ease-out"
-                >
+                <div className="relative bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 rounded-3xl w-full max-w-lg sm:max-w-xl md:max-w-2xl p-6 overflow-y-auto max-h-[90vh] shadow-2xl border border-white/20">
                     <button
-                        onClick={() => setModal(null)}
+                        onClick={() => {
+                            setModal(null);
+                            setTrailer(null);
+                        }}
                         className="absolute top-4 right-4 text-2xl text-gray-300 hover:text-white hover:scale-110 transition-all duration-200 cursor-pointer"
                     >
                         &times;
@@ -94,7 +119,7 @@ const App = () => {
                     <h2 className="text-2xl sm:text-3xl font-bold text-center text-indigo-300 mb-6 drop-shadow-lg">
                         {modal.Title}
                     </h2>
-                    <div className="flex justify-center items-center mb-6">
+                    {/* <div className="flex justify-center items-center mb-6">
                         <img
                             src={
                                 modal.Poster !== "N/A"
@@ -104,20 +129,41 @@ const App = () => {
                             alt={modal.Title}
                             className="max-h-64 sm:max-h-80 w-auto object-contain rounded-2xl shadow-xl border border-white/10"
                         />
-                    </div>
+                    </div> */}
+
+                    {trailer ? (
+                        <div className="mb-6">
+                            <iframe
+                                width="100%"
+                                height="315"
+                                src={trailer}
+                                title="YouTube Trailer"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="rounded-2xl shadow-lg border border-white/10"
+                            ></iframe>
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-400 italic mb-6">Trailer not available</p>
+                    )}
+
                     <div className="text-slate-200 space-y-4 text-sm sm:text-base leading-relaxed">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <p>
-                                <span className="text-indigo-300 font-semibold">Director:</span> {modal.Director}
+                                <span className="text-indigo-300 font-semibold">Director:</span>{" "}
+                                {modal.Director}
                             </p>
                             <p>
-                                <span className="text-indigo-300 font-semibold">Actors:</span> {modal.Actors}
+                                <span className="text-indigo-300 font-semibold">Actors:</span>{" "}
+                                {modal.Actors}
                             </p>
                             <p>
-                                <span className="text-indigo-300 font-semibold">Runtime:</span> {modal.Runtime}
+                                <span className="text-indigo-300 font-semibold">Runtime:</span>{" "}
+                                {modal.Runtime}
                             </p>
                             <p>
-                                <span className="text-indigo-300 font-semibold">IMDB Rating:</span> ⭐ {modal.imdbRating}
+                                <span className="text-indigo-300 font-semibold">IMDB Rating:</span> ⭐{" "}
+                                {modal.imdbRating}
                             </p>
                         </div>
                         <p className="mt-4">
