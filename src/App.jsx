@@ -18,19 +18,28 @@ const App = () => {
         }
         setError("loading...");
         try {
-            const url = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY
-                }&s=${title}&page=${p}${year ? `&y=${year}` : ""}${type ? `&type=${type}` : ""}`;
+            const url = `https://www.omdbapi.com/?apikey=${
+                import.meta.env.VITE_CINEMAHUNT_API_KEY
+            }&s=${title}&page=${p}${year ? `&y=${year}` : ""}${
+                type ? `&type=${type}` : ""
+            }`;
             const res = await fetch(url);
             const data = await res.json();
+
             if (data.Response === "False") {
+                setMovies([]); 
+                setTotal(0);
                 setError(data.Error);
                 return;
             }
+
             setMovies(p === 1 ? data.Search : [...movies, ...data.Search]);
             setTotal(parseInt(data.totalResults));
             setError("");
         } catch {
             setError("Network Error");
+            setMovies([]); 
+            setTotal(0);
         }
     };
 
@@ -54,8 +63,9 @@ const App = () => {
 
     const details = async (id) => {
         try {
-            const detailUrl = `https://www.omdbapi.com/?apikey=${import.meta.env.VITE_CINEMAHUNT_API_KEY
-                }&i=${id}&plot=full`;
+            const detailUrl = `https://www.omdbapi.com/?apikey=${
+                import.meta.env.VITE_CINEMAHUNT_API_KEY
+            }&i=${id}&plot=full`;
             const detailRes = await fetch(detailUrl);
             const details = await detailRes.json();
             setModal(details);
@@ -119,17 +129,6 @@ const App = () => {
                     <h2 className="text-2xl sm:text-3xl font-bold text-center text-indigo-300 mb-6 drop-shadow-lg">
                         {modal.Title}
                     </h2>
-                    {/* <div className="flex justify-center items-center mb-6">
-                        <img
-                            src={
-                                modal.Poster !== "N/A"
-                                    ? modal.Poster
-                                    : "https://via.placeholder.com/200x350?text=No+Image"
-                            }
-                            alt={modal.Title}
-                            className="max-h-64 sm:max-h-80 w-auto object-contain rounded-2xl shadow-xl border border-white/10"
-                        />
-                    </div> */}
 
                     {trailer ? (
                         <div className="mb-6">
