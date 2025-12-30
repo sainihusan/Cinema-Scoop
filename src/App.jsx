@@ -13,7 +13,7 @@ const App = () => {
 
   const movie = async (p = 1) => {
     if (!title.trim()) {
-      setError("Enter Movie Title");
+      setError("Enter movie title");
       return;
     }
 
@@ -39,7 +39,7 @@ const App = () => {
       setTotal(parseInt(data.totalResults));
       setError("");
     } catch {
-      setError("Network Error");
+      setError("Network error");
       setMovies([]);
       setTotal(0);
     }
@@ -56,7 +56,7 @@ const App = () => {
 
       if (data.items?.length) {
         setTrailer(
-          `https://www.youtube.com/embed/${data.items[0].id.videoId}?autoplay=1`
+          `https://www.youtube.com/embed/${data.items[0].id.videoId}`
         );
       } else {
         setTrailer(null);
@@ -68,17 +68,17 @@ const App = () => {
 
   const details = async (id) => {
     try {
-      const detailUrl = `https://www.omdbapi.com/?apikey=${
+      const url = `https://www.omdbapi.com/?apikey=${
         import.meta.env.VITE_CINEMAHUNT_API_KEY
       }&i=${id}&plot=full`;
 
-      const res = await fetch(detailUrl);
+      const res = await fetch(url);
       const data = await res.json();
 
       setModal(data);
       fetchTrailer(data.Title);
     } catch {
-      setError("Failed to fetch details");
+      setError("Failed to load details");
     }
   };
 
@@ -94,170 +94,143 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen relative bg-[#020617] text-slate-100 overflow-hidden">
-      {/* Ambient Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.15),transparent_60%)]" />
-
-      <div className="relative z-10 p-4 sm:p-6">
-        {/* Title */}
-        <h1 className="text-center mb-12">
-          <span className="block text-xs tracking-[0.4em] text-indigo-400 uppercase mb-2">
-            Discover Movies
-          </span>
-          <span className="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(99,102,241,0.6)]">
-            Cinema Scoop
-          </span>
+    <div className="min-h-screen bg-[#0b0b0b] text-gray-100 px-4 pb-10">
+      {/* Header */}
+      <header className="max-w-7xl mx-auto py-8">
+        <h1 className="text-4xl font-bold tracking-tight">
+          🎬 Cinema Scoop
         </h1>
+        <p className="text-gray-400 mt-1">
+          Search movies, series & episodes
+        </p>
+      </header>
 
-        {/* Search Card */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-5xl mx-auto mb-10 p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_0_40px_rgba(99,102,241,0.15)]">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Search movies, series..."
-            className="flex-1 p-4 rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400"
-          />
+      {/* Search Bar */}
+      <div className="max-w-7xl mx-auto bg-[#141414] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Movie title"
+          className="flex-1 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500"
+        />
 
-          <input
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            placeholder="Year"
-            className="w-full sm:w-28 p-4 rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-400"
-          />
+        <input
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          placeholder="Year"
+          className="w-full md:w-28 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500"
+        />
 
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full sm:w-36 p-4 rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-purple-500 outline-none cursor-pointer"
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="w-full md:w-36 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none"
+        >
+          <option value="">All</option>
+          <option value="movie">Movie</option>
+          <option value="series">Series</option>
+          <option value="episode">Episode</option>
+        </select>
+
+        <button
+          onClick={handleSearch}
+          className="bg-indigo-600 hover:bg-indigo-500 transition px-8 py-3 rounded-lg font-semibold"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Status */}
+      {error === "loading..." ? (
+        <div className="flex justify-center mt-10">
+          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        error && (
+          <p className="text-center text-red-400 mt-8 font-medium">
+            {error}
+          </p>
+        )
+      )}
+
+      {/* Movies */}
+      <div className="max-w-7xl mx-auto mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        {movies.map((m) => (
+          <div
+            key={m.imdbID}
+            onClick={() => details(m.imdbID)}
+            className="cursor-pointer rounded-xl overflow-hidden bg-[#141414] hover:scale-[1.03] transition shadow-md hover:shadow-xl"
           >
-            <option value="">All</option>
-            <option value="movie">Movie</option>
-            <option value="series">Series</option>
-            <option value="episode">Episode</option>
-          </select>
+            <img
+              src={
+                m.Poster !== "N/A"
+                  ? m.Poster
+                  : "https://via.placeholder.com/300x450?text=No+Image"
+              }
+              alt={m.Title}
+              className="w-full h-64 object-cover"
+            />
 
+            <div className="p-3">
+              <h3 className="font-semibold text-sm line-clamp-1">
+                {m.Title}
+              </h3>
+              <p className="text-gray-400 text-xs">{m.Year}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Load More */}
+      {page * 10 < total && (
+        <div className="text-center mt-10">
           <button
-            onClick={handleSearch}
-            className="px-8 py-4 rounded-2xl font-semibold bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-xl"
+            onClick={handleLoadMore}
+            className="px-8 py-3 bg-[#1f1f1f] border border-white/10 rounded-lg hover:bg-[#262626] transition"
           >
-            Search
+            Load More
           </button>
         </div>
+      )}
 
-        {/* Loader / Error */}
-        {error === "loading..." ? (
-          <div className="flex justify-center mt-10">
-            <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          error && (
-            <p className="text-center text-red-400 font-semibold mb-6">
-              {error}
-            </p>
-          )
-        )}
-
-        {/* Movies Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 max-w-7xl mx-auto">
-          {movies.map((m) => (
-            <div
-              key={m.imdbID}
-              onClick={() => details(m.imdbID)}
-              className="group relative overflow-hidden rounded-2xl cursor-pointer bg-gradient-to-br from-gray-900 to-black border border-white/10 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-indigo-500/30"
-            >
-              <img
-                src={
-                  m.Poster !== "N/A"
-                    ? m.Poster
-                    : "https://via.placeholder.com/300x450?text=No+Image"
-                }
-                alt={m.Title}
-                className="w-full h-64 md:h-80 object-cover transition-transform duration-500 group-hover:scale-110 group-hover:brightness-75"
-              />
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition">
-                <h3 className="text-sm sm:text-lg font-bold text-center">
-                  {m.Title}
-                </h3>
-                <p className="text-indigo-400 text-center text-xs">
-                  {m.Year}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Load More */}
-        {page * 10 < total && (
-          <div className="text-center mt-12">
+      {/* Modal */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#141414] max-w-3xl w-full rounded-xl p-6 relative border border-white/10">
             <button
-              onClick={handleLoadMore}
-              className="px-10 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-semibold transition-all transform hover:scale-105 shadow-xl"
+              onClick={() => {
+                setModal(null);
+                setTrailer(null);
+              }}
+              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-white"
             >
-              Load More
+              ×
             </button>
-          </div>
-        )}
 
-        {/* Modal */}
-        {modal && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-            <div className="relative max-w-3xl w-full bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900 rounded-3xl p-6 border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
-              <button
-                onClick={() => {
-                  setModal(null);
-                  setTrailer(null);
-                }}
-                className="absolute top-4 right-4 text-3xl text-gray-300 hover:text-white"
-              >
-                &times;
-              </button>
+            <h2 className="text-2xl font-bold mb-4">{modal.Title}</h2>
 
-              <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
-                {modal.Title}
-              </h2>
+            {trailer && (
+              <iframe
+                src={trailer}
+                title="Trailer"
+                className="w-full h-72 rounded-lg mb-4"
+                allowFullScreen
+              />
+            )}
 
-              {trailer ? (
-                <iframe
-                  src={trailer}
-                  title="Trailer"
-                  className="w-full h-72 rounded-2xl mb-6"
-                  allowFullScreen
-                />
-              ) : (
-                <p className="text-center text-gray-400 mb-6">
-                  Trailer not available
-                </p>
-              )}
+            <p className="text-gray-300 text-sm leading-relaxed">
+              {modal.Plot}
+            </p>
 
-              <div className="space-y-3 text-sm sm:text-base">
-                <p>
-                  <span className="text-indigo-400 font-semibold">Director:</span>{" "}
-                  {modal.Director}
-                </p>
-                <p>
-                  <span className="text-indigo-400 font-semibold">Actors:</span>{" "}
-                  {modal.Actors}
-                </p>
-                <p>
-                  <span className="text-indigo-400 font-semibold">Runtime:</span>{" "}
-                  {modal.Runtime}
-                </p>
-                <p>
-                  <span className="text-indigo-400 font-semibold">
-                    IMDB Rating:
-                  </span>{" "}
-                  ⭐ {modal.imdbRating}
-                </p>
-                <p>
-                  <span className="text-indigo-400 font-semibold">Plot:</span>{" "}
-                  {modal.Plot}
-                </p>
-              </div>
+            <div className="mt-4 text-sm text-gray-400 space-y-1">
+              <p><b>Director:</b> {modal.Director}</p>
+              <p><b>Actors:</b> {modal.Actors}</p>
+              <p><b>Runtime:</b> {modal.Runtime}</p>
+              <p><b>IMDB:</b> ⭐ {modal.imdbRating}</p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
