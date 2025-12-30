@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 
 const SkeletonCard = () => (
-  <div className="rounded-xl bg-[#141414] border border-white/10 overflow-hidden animate-pulse">
-    <div className="h-64 bg-gray-700" />
-    <div className="p-3 space-y-2">
-      <div className="h-4 bg-gray-600 rounded w-3/4" />
-      <div className="h-3 bg-gray-600 rounded w-1/2" />
+  <div className="rounded-2xl bg-[#111] border border-white/10 overflow-hidden animate-pulse">
+    <div className="h-72 bg-gray-800" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 bg-gray-700 rounded w-3/4" />
+      <div className="h-3 bg-gray-700 rounded w-1/2" />
     </div>
   </div>
 );
 
-const App = () => {
+export default function App() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("");
   const [year, setYear] = useState("");
   const [movies, setMovies] = useState([]);
-  const [status, setStatus] = useState("idle"); // idle | loading | error
+  const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -24,8 +24,7 @@ const App = () => {
 
   const fetchMovies = async (p = 1) => {
     if (!title.trim()) {
-      setStatus("error");
-      setError("Please enter a movie title");
+      setError("Enter a movie title");
       return;
     }
 
@@ -45,8 +44,8 @@ const App = () => {
       if (data.Response === "False") {
         setMovies([]);
         setTotal(0);
-        setStatus("error");
         setError(data.Error);
+        setStatus("idle");
         return;
       }
 
@@ -54,26 +53,24 @@ const App = () => {
       setTotal(Number(data.totalResults));
       setStatus("idle");
     } catch {
-      setStatus("error");
-      setError("Network error. Please try again.");
+      setError("Network error");
+      setStatus("idle");
     }
   };
 
   const fetchTrailer = async (query) => {
     try {
-      const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&type=video&q=${encodeURIComponent(
+      const yt = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(
         query + " trailer"
       )}&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`;
 
-      const res = await fetch(ytUrl);
+      const res = await fetch(yt);
       const data = await res.json();
 
       if (data.items?.length) {
         setTrailer(
           `https://www.youtube.com/embed/${data.items[0].id.videoId}`
         );
-      } else {
-        setTrailer(null);
       }
     } catch {
       setTrailer(null);
@@ -81,100 +78,84 @@ const App = () => {
   };
 
   const openDetails = async (id) => {
-    try {
-      const url = `https://www.omdbapi.com/?apikey=${
-        import.meta.env.VITE_CINEMAHUNT_API_KEY
-      }&i=${id}&plot=full`;
+    const url = `https://www.omdbapi.com/?apikey=${
+      import.meta.env.VITE_CINEMAHUNT_API_KEY
+    }&i=${id}&plot=full`;
 
-      const res = await fetch(url);
-      const data = await res.json();
-
-      setModal(data);
-      fetchTrailer(data.Title);
-    } catch {
-      setError("Failed to load details");
-    }
+    const res = await fetch(url);
+    const data = await res.json();
+    setModal(data);
+    fetchTrailer(data.Title);
   };
 
-  const handleSearch = () => {
-    setPage(1);
-    fetchMovies(1);
-  };
-
-  const loadMore = () => {
-    const next = page + 1;
-    setPage(next);
-    fetchMovies(next);
-  };
-
-  // Close modal with ESC
   useEffect(() => {
-    const closeOnEsc = (e) => {
-      if (e.key === "Escape") {
-        setModal(null);
-        setTrailer(null);
-      }
-    };
-    window.addEventListener("keydown", closeOnEsc);
-    return () => window.removeEventListener("keydown", closeOnEsc);
+    const esc = (e) => e.key === "Escape" && setModal(null);
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-gray-100 px-4 pb-14">
-      {/* Header */}
-      <header className="max-w-7xl mx-auto py-10">
-        <h1 className="text-4xl font-extrabold tracking-tight">
-          🎬 Cinema Scoop
-        </h1>
-        <p className="text-gray-400 mt-2">
-          Discover movies & series with trailers and details
-        </p>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-black via-[#0b0b0b] to-black text-white">
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),transparent_70%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 py-24 text-center">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
+            🎬 Cinema Scoop
+          </h1>
+          <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+            Discover movies, series & trailers in a cinematic experience
+          </p>
+        </div>
+      </section>
 
-      {/* Search Bar */}
-      <div className="max-w-7xl mx-auto bg-[#141414] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Search movie or series"
-          className="flex-1 bg-black px-4 py-3 rounded-lg border border-white/10 focus:border-indigo-500 outline-none"
-        />
+      {/* SEARCH */}
+      <div className="max-w-6xl mx-auto px-4 -mt-16 relative z-10">
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-4 shadow-2xl">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Search movies..."
+            className="flex-1 bg-black/60 px-5 py-4 rounded-xl border border-white/10 focus:border-indigo-500 outline-none"
+          />
 
-        <input
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          placeholder="Year"
-          className="w-full md:w-28 bg-black px-4 py-3 rounded-lg border border-white/10"
-        />
+          <input
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            placeholder="Year"
+            className="w-full md:w-28 bg-black/60 px-4 py-4 rounded-xl border border-white/10"
+          />
 
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full md:w-36 bg-black px-4 py-3 rounded-lg border border-white/10"
-        >
-          <option value="">All</option>
-          <option value="movie">Movie</option>
-          <option value="series">Series</option>
-          <option value="episode">Episode</option>
-        </select>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="w-full md:w-36 bg-black/60 px-4 py-4 rounded-xl border border-white/10"
+          >
+            <option value="">All</option>
+            <option value="movie">Movie</option>
+            <option value="series">Series</option>
+          </select>
 
-        <button
-          onClick={handleSearch}
-          className="bg-indigo-600 hover:bg-indigo-500 transition px-8 py-3 rounded-lg font-semibold"
-        >
-          Search
-        </button>
+          <button
+            onClick={() => {
+              setPage(1);
+              fetchMovies(1);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-500 transition px-8 py-4 rounded-xl font-semibold shadow-lg shadow-indigo-600/30"
+          >
+            Search
+          </button>
+        </div>
       </div>
 
-      {/* Error */}
-      {status === "error" && (
-        <p className="text-center text-red-400 mt-8 font-medium">
+      {error && (
+        <p className="text-center text-red-400 mt-10 font-medium">
           {error}
         </p>
       )}
 
-      {/* Movie Grid */}
-      <div className="max-w-7xl mx-auto mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      {/* GRID */}
+      <div className="max-w-7xl mx-auto px-4 mt-20 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
         {status === "loading"
           ? Array.from({ length: 10 }).map((_, i) => (
               <SkeletonCard key={i} />
@@ -183,92 +164,94 @@ const App = () => {
               <div
                 key={m.imdbID}
                 onClick={() => openDetails(m.imdbID)}
-                className="group cursor-pointer rounded-xl overflow-hidden bg-[#141414] border border-white/10 hover:-translate-y-2 transition-all"
+                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-[#111] shadow-xl hover:-translate-y-3 transition duration-500"
               >
-                <div className="relative">
-                  <img
-                    src={
-                      m.Poster !== "N/A"
-                        ? m.Poster
-                        : "https://via.placeholder.com/300x450?text=No+Image"
-                    }
-                    alt={m.Title}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                <img
+                  src={
+                    m.Poster !== "N/A"
+                      ? m.Poster
+                      : "https://via.placeholder.com/300x450"
+                  }
+                  alt={m.Title}
+                  className="h-72 w-full object-cover group-hover:scale-110 transition duration-700"
+                />
 
-                  <span className="absolute top-2 right-2 bg-black/80 text-xs px-2 py-1 rounded">
-                    {m.Type}
-                  </span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
 
-                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                    <p className="text-sm font-semibold">
-                      View Details →
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3">
-                  <h3 className="font-semibold text-sm line-clamp-1">
+                <div className="absolute bottom-0 p-4">
+                  <h3 className="font-bold text-sm line-clamp-2">
                     {m.Title}
                   </h3>
-                  <p className="text-gray-400 text-xs">{m.Year}</p>
+                  <div className="flex gap-2 mt-1 text-xs text-gray-300">
+                    <span className="px-2 py-0.5 bg-black/60 rounded">
+                      {m.Year}
+                    </span>
+                    <span className="px-2 py-0.5 bg-indigo-600/80 rounded">
+                      {m.Type}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
       </div>
 
-      {/* Load More */}
-      {page * 10 < total && status !== "loading" && (
-        <div className="text-center mt-12">
+      {/* LOAD MORE */}
+      {page * 10 < total && (
+        <div className="text-center mt-16">
           <button
-            onClick={loadMore}
-            className="px-8 py-3 bg-[#1f1f1f] border border-white/10 rounded-lg hover:bg-[#262626] transition"
+            onClick={() => {
+              const next = page + 1;
+              setPage(next);
+              fetchMovies(next);
+            }}
+            className="px-10 py-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition"
           >
             Load More
           </button>
         </div>
       )}
 
-      {/* Modal */}
+      {/* MODAL */}
       {modal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#141414] max-w-3xl w-full rounded-xl p-6 relative border border-white/10">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111] max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl relative">
             <button
               onClick={() => {
                 setModal(null);
                 setTrailer(null);
               }}
-              className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-white"
+              className="absolute top-4 right-6 text-3xl text-gray-400 hover:text-white"
             >
               ×
             </button>
-
-            <h2 className="text-2xl font-bold mb-4">{modal.Title}</h2>
 
             {trailer && (
               <iframe
                 src={trailer}
                 title="Trailer"
-                className="w-full h-72 rounded-lg mb-4"
+                className="w-full h-80"
                 allowFullScreen
               />
             )}
 
-            <p className="text-gray-300 text-sm leading-relaxed">
-              {modal.Plot}
-            </p>
+            <div className="p-8">
+              <h2 className="text-3xl font-extrabold mb-4">
+                {modal.Title}
+              </h2>
+              <p className="text-gray-300 leading-relaxed">
+                {modal.Plot}
+              </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-400">
-              <p><b>Director:</b> {modal.Director}</p>
-              <p><b>Actors:</b> {modal.Actors}</p>
-              <p><b>Runtime:</b> {modal.Runtime}</p>
-              <p><b>IMDB:</b> ⭐ {modal.imdbRating}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm text-gray-400">
+                <p><b>Director:</b> {modal.Director}</p>
+                <p><b>Actors:</b> {modal.Actors}</p>
+                <p><b>Runtime:</b> {modal.Runtime}</p>
+                <p><b>IMDb:</b> ⭐ {modal.imdbRating}</p>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default App;
+}
