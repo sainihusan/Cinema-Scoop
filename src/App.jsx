@@ -1,23 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const SkeletonCard = () => (
+  <div className="rounded-xl bg-[#141414] border border-white/10 overflow-hidden animate-pulse">
+    <div className="h-64 bg-gray-700" />
+    <div className="p-3 space-y-2">
+      <div className="h-4 bg-gray-600 rounded w-3/4" />
+      <div className="h-3 bg-gray-600 rounded w-1/2" />
+    </div>
+  </div>
+);
 
 const App = () => {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("");
   const [year, setYear] = useState("");
   const [movies, setMovies] = useState([]);
+  const [status, setStatus] = useState("idle"); // idle | loading | error
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [modal, setModal] = useState(null);
   const [trailer, setTrailer] = useState(null);
 
-  const movie = async (p = 1) => {
+  const fetchMovies = async (p = 1) => {
     if (!title.trim()) {
-      setError("Enter movie title");
+      setStatus("error");
+      setError("Please enter a movie title");
       return;
     }
 
-    setError("loading...");
+    setStatus("loading");
+    setError("");
+
     try {
       const url = `https://www.omdbapi.com/?apikey=${
         import.meta.env.VITE_CINEMAHUNT_API_KEY
@@ -31,17 +45,17 @@ const App = () => {
       if (data.Response === "False") {
         setMovies([]);
         setTotal(0);
+        setStatus("error");
         setError(data.Error);
         return;
       }
 
       setMovies(p === 1 ? data.Search : [...movies, ...data.Search]);
-      setTotal(parseInt(data.totalResults));
-      setError("");
+      setTotal(Number(data.totalResults));
+      setStatus("idle");
     } catch {
-      setError("Network error");
-      setMovies([]);
-      setTotal(0);
+      setStatus("error");
+      setError("Network error. Please try again.");
     }
   };
 
@@ -66,7 +80,7 @@ const App = () => {
     }
   };
 
-  const details = async (id) => {
+  const openDetails = async (id) => {
     try {
       const url = `https://www.omdbapi.com/?apikey=${
         import.meta.env.VITE_CINEMAHUNT_API_KEY
@@ -84,34 +98,46 @@ const App = () => {
 
   const handleSearch = () => {
     setPage(1);
-    movie(1);
+    fetchMovies(1);
   };
 
-  const handleLoadMore = () => {
+  const loadMore = () => {
     const next = page + 1;
     setPage(next);
-    movie(next);
+    fetchMovies(next);
   };
 
+  // Close modal with ESC
+  useEffect(() => {
+    const closeOnEsc = (e) => {
+      if (e.key === "Escape") {
+        setModal(null);
+        setTrailer(null);
+      }
+    };
+    window.addEventListener("keydown", closeOnEsc);
+    return () => window.removeEventListener("keydown", closeOnEsc);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-gray-100 px-4 pb-12">
+    <div className="min-h-screen bg-[#0c0c0c] text-gray-100 px-4 pb-14">
       {/* Header */}
-      <header className="max-w-7xl mx-auto py-8 flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight">
+      <header className="max-w-7xl mx-auto py-10">
+        <h1 className="text-4xl font-extrabold tracking-tight">
           🎬 Cinema Scoop
         </h1>
-        <p className="text-gray-400 text-sm">
-          Explore movies & series with interactive previews
+        <p className="text-gray-400 mt-2">
+          Discover movies & series with trailers and details
         </p>
       </header>
 
-      {/* Search Toolbar */}
+      {/* Search Bar */}
       <div className="max-w-7xl mx-auto bg-[#141414] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Search title"
-          className="flex-1 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500"
+          placeholder="Search movie or series"
+          className="flex-1 bg-black px-4 py-3 rounded-lg border border-white/10 focus:border-indigo-500 outline-none"
         />
 
         <input
@@ -140,68 +166,62 @@ const App = () => {
         </button>
       </div>
 
-      {/* Status */}
-      {error === "loading..." ? (
-        <div className="flex justify-center mt-10">
-          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        error && (
-          <p className="text-center text-red-400 mt-8 font-medium">
-            {error}
-          </p>
-        )
+      {/* Error */}
+      {status === "error" && (
+        <p className="text-center text-red-400 mt-8 font-medium">
+          {error}
+        </p>
       )}
 
       {/* Movie Grid */}
       <div className="max-w-7xl mx-auto mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {movies.map((m) => (
-          <div
-            key={m.imdbID}
-            onClick={() => details(m.imdbID)}
-            className="group cursor-pointer rounded-xl overflow-hidden bg-[#141414] border border-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
-          >
-            {/* Poster */}
-            <div className="relative">
-              <img
-                src={
-                  m.Poster !== "N/A"
-                    ? m.Poster
-                    : "https://via.placeholder.com/300x450?text=No+Image"
-                }
-                alt={m.Title}
-                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+        {status === "loading"
+          ? Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))
+          : movies.map((m) => (
+              <div
+                key={m.imdbID}
+                onClick={() => openDetails(m.imdbID)}
+                className="group cursor-pointer rounded-xl overflow-hidden bg-[#141414] border border-white/10 hover:-translate-y-2 transition-all"
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      m.Poster !== "N/A"
+                        ? m.Poster
+                        : "https://via.placeholder.com/300x450?text=No+Image"
+                    }
+                    alt={m.Title}
+                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
 
-              {/* Type Badge */}
-              <span className="absolute top-2 right-2 bg-black/80 text-xs px-2 py-1 rounded">
-                {m.Type}
-              </span>
+                  <span className="absolute top-2 right-2 bg-black/80 text-xs px-2 py-1 rounded">
+                    {m.Type}
+                  </span>
 
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                <p className="text-sm font-semibold">
-                  View Details →
-                </p>
+                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
+                    <p className="text-sm font-semibold">
+                      View Details →
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3">
+                  <h3 className="font-semibold text-sm line-clamp-1">
+                    {m.Title}
+                  </h3>
+                  <p className="text-gray-400 text-xs">{m.Year}</p>
+                </div>
               </div>
-            </div>
-
-            {/* Info */}
-            <div className="p-3">
-              <h3 className="font-semibold text-sm line-clamp-1">
-                {m.Title}
-              </h3>
-              <p className="text-gray-400 text-xs">{m.Year}</p>
-            </div>
-          </div>
-        ))}
+            ))}
       </div>
 
       {/* Load More */}
-      {page * 10 < total && (
+      {page * 10 < total && status !== "loading" && (
         <div className="text-center mt-12">
           <button
-            onClick={handleLoadMore}
+            onClick={loadMore}
             className="px-8 py-3 bg-[#1f1f1f] border border-white/10 rounded-lg hover:bg-[#262626] transition"
           >
             Load More
