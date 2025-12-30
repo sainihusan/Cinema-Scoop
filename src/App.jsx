@@ -19,8 +19,13 @@ export default function App() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // 🎬 HERO STATES
+  const [heroTrailer, setHeroTrailer] = useState(null);
+  const [heroMovie, setHeroMovie] = useState(null);
+
+  // MODAL
   const [modal, setModal] = useState(null);
-  const [trailer, setTrailer] = useState(null);
 
   const fetchMovies = async (p = 1) => {
     if (!title.trim()) {
@@ -58,34 +63,35 @@ export default function App() {
     }
   };
 
-  const fetchTrailer = async (query) => {
+  // 🎥 FETCH TRAILER FOR HERO
+  const fetchTrailer = async (movie) => {
     try {
       const yt = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(
-        query + " trailer"
+        movie.Title + " official trailer"
       )}&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`;
 
       const res = await fetch(yt);
       const data = await res.json();
 
       if (data.items?.length) {
-        setTrailer(
-          `https://www.youtube.com/embed/${data.items[0].id.videoId}`
-        );
+        setHeroTrailer(data.items[0].id.videoId);
+        setHeroMovie(movie);
       }
     } catch {
-      setTrailer(null);
+      setHeroTrailer(null);
     }
   };
 
-  const openDetails = async (id) => {
+  const openMovie = async (id) => {
     const url = `https://www.omdbapi.com/?apikey=${
       import.meta.env.VITE_CINEMAHUNT_API_KEY
     }&i=${id}&plot=full`;
 
     const res = await fetch(url);
     const data = await res.json();
+
     setModal(data);
-    fetchTrailer(data.Title);
+    fetchTrailer(data); // 👈 play in background
   };
 
   useEffect(() => {
@@ -95,22 +101,55 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#0b0b0b] to-black text-white">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),transparent_70%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 py-24 text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
-            🎬 Cinema Scoop
-          </h1>
-          <p className="mt-4 text-gray-400 max-w-xl mx-auto">
-            Discover movies, series & trailers in a cinematic experience
-          </p>
-        </div>
-      </section>
+    <div className="min-h-screen bg-black text-white">
+      {/* 🎬 HERO BACKGROUND TRAILER */}
+      {heroTrailer && heroMovie && (
+        <section className="relative h-[85vh] overflow-hidden">
+          <iframe
+            src={`https://www.youtube.com/embed/${heroTrailer}?autoplay=1&mute=1&controls=0&loop=1&playlist=${heroTrailer}&modestbranding=1&rel=0`}
+            className="absolute inset-0 w-full h-full scale-125"
+            allow="autoplay; fullscreen"
+            title="Background Trailer"
+          />
 
-      {/* SEARCH */}
-      <div className="max-w-6xl mx-auto px-4 -mt-16 relative z-10">
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+
+          {/* Text */}
+          <div className="relative z-10 max-w-7xl mx-auto h-full flex items-end px-6 pb-24">
+            <div>
+              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+                {heroMovie.Title}
+              </h1>
+              <p className="mt-2 text-lg text-gray-300">
+                {heroMovie.Year}
+              </p>
+
+              <div className="mt-6 flex gap-4">
+                <button
+                  onClick={() => setModal(heroMovie)}
+                  className="px-8 py-3 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition"
+                >
+                  View Details
+                </button>
+
+                <button
+                  onClick={() => {
+                    setHeroTrailer(null);
+                    setHeroMovie(null);
+                  }}
+                  className="px-6 py-3 bg-black/60 border border-white/20 rounded-xl hover:bg-black/80"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 🔍 SEARCH */}
+      <div className="max-w-6xl mx-auto px-4 -mt-12 relative z-20">
         <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row gap-4 shadow-2xl">
           <input
             value={title}
@@ -141,7 +180,7 @@ export default function App() {
               setPage(1);
               fetchMovies(1);
             }}
-            className="bg-indigo-600 hover:bg-indigo-500 transition px-8 py-4 rounded-xl font-semibold shadow-lg shadow-indigo-600/30"
+            className="bg-indigo-600 hover:bg-indigo-500 px-8 py-4 rounded-xl font-semibold shadow-lg shadow-indigo-600/30"
           >
             Search
           </button>
@@ -149,13 +188,11 @@ export default function App() {
       </div>
 
       {error && (
-        <p className="text-center text-red-400 mt-10 font-medium">
-          {error}
-        </p>
+        <p className="text-center text-red-400 mt-10">{error}</p>
       )}
 
-      {/* GRID */}
-      <div className="max-w-7xl mx-auto px-4 mt-20 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
+      {/* 🎞️ MOVIE GRID */}
+      <div className="max-w-7xl mx-auto px-4 mt-24 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
         {status === "loading"
           ? Array.from({ length: 10 }).map((_, i) => (
               <SkeletonCard key={i} />
@@ -163,7 +200,7 @@ export default function App() {
           : movies.map((m) => (
               <div
                 key={m.imdbID}
-                onClick={() => openDetails(m.imdbID)}
+                onClick={() => openMovie(m.imdbID)}
                 className="group cursor-pointer relative rounded-2xl overflow-hidden bg-[#111] shadow-xl hover:-translate-y-3 transition duration-500"
               >
                 <img
@@ -176,20 +213,15 @@ export default function App() {
                   className="h-72 w-full object-cover group-hover:scale-110 transition duration-700"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
                 <div className="absolute bottom-0 p-4">
                   <h3 className="font-bold text-sm line-clamp-2">
                     {m.Title}
                   </h3>
-                  <div className="flex gap-2 mt-1 text-xs text-gray-300">
-                    <span className="px-2 py-0.5 bg-black/60 rounded">
-                      {m.Year}
-                    </span>
-                    <span className="px-2 py-0.5 bg-indigo-600/80 rounded">
-                      {m.Type}
-                    </span>
-                  </div>
+                  <span className="mt-1 inline-block text-xs px-2 py-0.5 bg-black/60 rounded">
+                    {m.Year}
+                  </span>
                 </div>
               </div>
             ))}
@@ -204,51 +236,30 @@ export default function App() {
               setPage(next);
               fetchMovies(next);
             }}
-            className="px-10 py-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition"
+            className="px-10 py-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10"
           >
             Load More
           </button>
         </div>
       )}
 
-      {/* MODAL */}
+      {/* 🎬 MODAL */}
       {modal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] max-w-4xl w-full rounded-2xl overflow-hidden shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111] max-w-3xl w-full rounded-2xl p-8 relative">
             <button
-              onClick={() => {
-                setModal(null);
-                setTrailer(null);
-              }}
+              onClick={() => setModal(null)}
               className="absolute top-4 right-6 text-3xl text-gray-400 hover:text-white"
             >
               ×
             </button>
 
-            {trailer && (
-              <iframe
-                src={trailer}
-                title="Trailer"
-                className="w-full h-80"
-                allowFullScreen
-              />
-            )}
-
-            <div className="p-8">
-              <h2 className="text-3xl font-extrabold mb-4">
-                {modal.Title}
-              </h2>
-              <p className="text-gray-300 leading-relaxed">
-                {modal.Plot}
-              </p>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm text-gray-400">
-                <p><b>Director:</b> {modal.Director}</p>
-                <p><b>Actors:</b> {modal.Actors}</p>
-                <p><b>Runtime:</b> {modal.Runtime}</p>
-                <p><b>IMDb:</b> ⭐ {modal.imdbRating}</p>
-              </div>
-            </div>
+            <h2 className="text-3xl font-extrabold mb-4">
+              {modal.Title}
+            </h2>
+            <p className="text-gray-300 leading-relaxed">
+              {modal.Plot}
+            </p>
           </div>
         </div>
       )}
