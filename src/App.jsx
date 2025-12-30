@@ -94,23 +94,23 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-gray-100 px-4 pb-10">
+    <div className="min-h-screen bg-[#0c0c0c] text-gray-100 px-4 pb-12">
       {/* Header */}
-      <header className="max-w-7xl mx-auto py-8">
+      <header className="max-w-7xl mx-auto py-8 flex flex-col gap-2">
         <h1 className="text-4xl font-bold tracking-tight">
           🎬 Cinema Scoop
         </h1>
-        <p className="text-gray-400 mt-1">
-          Search movies, series & episodes
+        <p className="text-gray-400 text-sm">
+          Explore movies & series with interactive previews
         </p>
       </header>
 
-      {/* Search Bar */}
+      {/* Search Toolbar */}
       <div className="max-w-7xl mx-auto bg-[#141414] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Movie title"
+          placeholder="Search title"
           className="flex-1 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500"
         />
 
@@ -118,13 +118,13 @@ const App = () => {
           value={year}
           onChange={(e) => setYear(e.target.value)}
           placeholder="Year"
-          className="w-full md:w-28 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500"
+          className="w-full md:w-28 bg-black px-4 py-3 rounded-lg border border-white/10"
         />
 
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="w-full md:w-36 bg-black px-4 py-3 rounded-lg border border-white/10 focus:outline-none"
+          className="w-full md:w-36 bg-black px-4 py-3 rounded-lg border border-white/10"
         >
           <option value="">All</option>
           <option value="movie">Movie</option>
@@ -153,24 +153,40 @@ const App = () => {
         )
       )}
 
-      {/* Movies */}
+      {/* Movie Grid */}
       <div className="max-w-7xl mx-auto mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {movies.map((m) => (
           <div
             key={m.imdbID}
             onClick={() => details(m.imdbID)}
-            className="cursor-pointer rounded-xl overflow-hidden bg-[#141414] hover:scale-[1.03] transition shadow-md hover:shadow-xl"
+            className="group cursor-pointer rounded-xl overflow-hidden bg-[#141414] border border-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl"
           >
-            <img
-              src={
-                m.Poster !== "N/A"
-                  ? m.Poster
-                  : "https://via.placeholder.com/300x450?text=No+Image"
-              }
-              alt={m.Title}
-              className="w-full h-64 object-cover"
-            />
+            {/* Poster */}
+            <div className="relative">
+              <img
+                src={
+                  m.Poster !== "N/A"
+                    ? m.Poster
+                    : "https://via.placeholder.com/300x450?text=No+Image"
+                }
+                alt={m.Title}
+                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+              />
 
+              {/* Type Badge */}
+              <span className="absolute top-2 right-2 bg-black/80 text-xs px-2 py-1 rounded">
+                {m.Type}
+              </span>
+
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
+                <p className="text-sm font-semibold">
+                  View Details →
+                </p>
+              </div>
+            </div>
+
+            {/* Info */}
             <div className="p-3">
               <h3 className="font-semibold text-sm line-clamp-1">
                 {m.Title}
@@ -183,7 +199,7 @@ const App = () => {
 
       {/* Load More */}
       {page * 10 < total && (
-        <div className="text-center mt-10">
+        <div className="text-center mt-12">
           <button
             onClick={handleLoadMore}
             className="px-8 py-3 bg-[#1f1f1f] border border-white/10 rounded-lg hover:bg-[#262626] transition"
@@ -222,7 +238,7 @@ const App = () => {
               {modal.Plot}
             </p>
 
-            <div className="mt-4 text-sm text-gray-400 space-y-1">
+            <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-400">
               <p><b>Director:</b> {modal.Director}</p>
               <p><b>Actors:</b> {modal.Actors}</p>
               <p><b>Runtime:</b> {modal.Runtime}</p>
